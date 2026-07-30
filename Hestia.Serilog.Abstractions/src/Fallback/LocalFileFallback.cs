@@ -11,7 +11,7 @@ namespace Hestia.Serilog.Fallback
     public sealed class LocalFileFallback(string name,  string error = "error", string[] columns = null, char separator = ',', char prefix = '"', char postfix='"',string rolling = "yyyyMMdd", Encoding encoding = null): IFallback
     {
         private readonly Encoding encoding = encoding ?? Encoding.UTF8;
-        private readonly string[] columns = columns ?? [Columns.Timestamp, Columns.Level, Columns.TraceId, Columns.SpanId, Columns.Message, Columns.Template, Columns.Properties, Columns.Exception, Columns.ExceptionBase, Columns.ExceptionStackTrace];
+        private readonly string[] columns = columns ?? Utility.LogEventPicker.Keys.ToArray();
         private readonly Func<string,DateTimeOffset,string> fmt = (name,ts) => string.IsNullOrEmpty(rolling) ? name : string.Join('.', name, ts.ToString(rolling));
 
         private async Task ErrorAsync(DateTimeOffset ts, IReadOnlyList<Exception> errors)

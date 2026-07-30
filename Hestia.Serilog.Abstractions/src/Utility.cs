@@ -14,7 +14,7 @@ namespace Hestia.Serilog
 { 
     public static class Utility
     {
-        public static class Keys
+        public static class PickerKeys
         {
             public const string Timestamp = "Timestamp";
             public const string Level = "Level";
@@ -29,18 +29,18 @@ namespace Hestia.Serilog
             public const string PropertyPrefix = "Property.";
         }
 
-        private static ReadOnlyDictionary<string, Func<LogEvent, string>> LogEventPicker = (new() {
-            { Keys.Timestamp,  @event => $"{@event.Timestamp:yyyy-MM-dd HH:mm:ss.fff}" },
-            { Keys.Level, @event => $"{@event.Level}" },
-            { Keys.TraceId, @event =>  @event.TraceId?.ToHexString() ?? string.Empty },
-            { Keys.SpanId, @event => @event.SpanId?.ToHexString() ?? string.Empty },
-            { Keys.Message, @event => @event.RenderMessage() ?? string.Empty },
-            { Keys.Template, @event => @event.MessageTemplate.Text },
-            { Keys.Properties, @event => Utility.FormatProperties(@event.Properties) },
-            { Keys.Exception, @event => @event.Exception?.Message ?? string.Empty },
-            { Keys.ExceptionBase, @event => @event.Exception?.GetBaseException().Message ?? string.Empty },
-            { Keys.ExceptionStackTrace, @event => @event.Exception?.StackTrace ?? string.Empty }
-        }).AsReadOnly();
+        internal static ReadOnlyDictionary<string, Func<LogEvent, string>> LogEventPicker = new (new Dictionary<string, Func<LogEvent, string>> {
+            { PickerKeys.Timestamp,  @event => $"{@event.Timestamp:yyyy-MM-dd HH:mm:ss.fff}" },
+            { PickerKeys.Level, @event => $"{@event.Level}" },
+            { PickerKeys.TraceId, @event =>  @event.TraceId?.ToHexString() ?? string.Empty },
+            { PickerKeys.SpanId, @event => @event.SpanId?.ToHexString() ?? string.Empty },
+            { PickerKeys.Message, @event => @event.RenderMessage() ?? string.Empty },
+            { PickerKeys.Template, @event => @event.MessageTemplate.Text },
+            { PickerKeys.Properties, @event => Utility.FormatProperties(@event.Properties) },
+            { PickerKeys.Exception, @event => @event.Exception?.Message ?? string.Empty },
+            { PickerKeys.ExceptionBase, @event => @event.Exception?.GetBaseException().Message ?? string.Empty },
+            { PickerKeys.ExceptionStackTrace, @event => @event.Exception?.StackTrace ?? string.Empty }
+        });
 
         public static string FormatProperty(LogEventPropertyValue property)
         {
@@ -69,7 +69,7 @@ namespace Hestia.Serilog
             return message;
         }        
 
-        public static Dictionary<string, string> BuildLogEventDictionary(LogEvent @event, IReadOnlyDictionary<string,string> map)
+        public static Dictionary<string, string> BuildLogEventDictionary(LogEvent @event, IReadOnlyDictionary<string,string> map = null)
         {            
             if(map is null || map.Count == 0)
             {
