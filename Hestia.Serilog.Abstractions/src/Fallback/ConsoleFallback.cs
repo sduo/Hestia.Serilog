@@ -69,7 +69,7 @@ namespace Hestia.Serilog.Fallback
             }
         }
 
-        private void WriteLog(DateTimeOffset ts, LogEvent[] events)
+        private void WriteLog(DateTimeOffset ts, IReadOnlyCollection<LogEvent> events)
         {
             if(events is null) { return; }
             SafeWriteLine(Output, $"[{name}] {ts:yyyy-MM-dd HH:mm:ss.fff}");
@@ -87,7 +87,7 @@ namespace Hestia.Serilog.Fallback
             }
         }
 
-        public Task ExecuteAsync(IReadOnlyList<Exception> errors, LogEvent[] events)
+        public Task ExecuteAsync(IReadOnlyList<Exception> errors, IReadOnlyCollection<LogEvent> events)
         {
             var ts = DateTimeOffset.Now;
             WriteError(ts, errors);

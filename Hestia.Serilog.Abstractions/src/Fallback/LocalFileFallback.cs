@@ -35,7 +35,7 @@ namespace Hestia.Serilog.Fallback
 
         // private string EmptyLine(int length) => FormatLine(new string[length]);
 
-        private async Task LogAsync(DateTimeOffset ts, LogEvent[] events)
+        private async Task LogAsync(DateTimeOffset ts, IReadOnlyCollection<LogEvent> events)
         {
             var file = $"{fmt.Invoke(name,ts)}.csv";
             var title = File.Exists(file) ? FormatLine(columns) : null;
@@ -50,7 +50,7 @@ namespace Hestia.Serilog.Fallback
             }
         }
 
-        public async Task ExecuteAsync(IReadOnlyList<Exception> errors, LogEvent[] events)
+        public async Task ExecuteAsync(IReadOnlyList<Exception> errors, IReadOnlyCollection<LogEvent> events)
         {
             var ts = DateTimeOffset.Now;
             await ErrorAsync(ts, errors);

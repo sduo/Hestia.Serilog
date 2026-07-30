@@ -7,6 +7,6 @@ namespace Hestia.Serilog.Fallback
 {
     public interface IFallback
     {
-        Task ExecuteAsync(IReadOnlyList<Exception> errors, LogEvent[] events);
+        Task ExecuteAsync(IReadOnlyList<Exception> errors, IReadOnlyCollection<LogEvent> events);
     }
 }
