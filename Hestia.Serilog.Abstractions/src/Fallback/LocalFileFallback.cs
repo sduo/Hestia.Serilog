@@ -44,18 +44,7 @@ namespace Hestia.Serilog.Fallback
             if (!string.IsNullOrEmpty(title)) { await sw.WriteLineAsync(title); }
             foreach (var @event in events)
             {
-                var dynamics = new Dictionary<string, string>() {
-                    { Columns.Timestamp, $"{@event.Timestamp:yyyy-MM-dd HH:mm:ss.fff}" },
-                    { Columns.Level, $"{@event.Level}" },
-                    { Columns.TraceId, @event.TraceId?.ToHexString() ?? string.Empty },
-                    { Columns.SpanId, @event.SpanId?.ToHexString() ?? string.Empty },
-                    { Columns.Message, @event.RenderMessage() ?? string.Empty },
-                    { Columns.Template, @event.MessageTemplate.Text },
-                    { Columns.Properties, Utility.FormatProperties(@event.Properties) },
-                    { Columns.Exception, @event.Exception?.Message ?? string.Empty },
-                    { Columns.ExceptionBase, @event.Exception?.GetBaseException().Message ?? string.Empty },
-                    { Columns.ExceptionStackTrace, @event.Exception?.StackTrace ?? string.Empty },
-                };
+                var dynamics = Utility.BuildLogEventDictionary(@event);
                 var line = FormatLine(columns.Select(x => dynamics.ContainsKey(x) ? dynamics[x] : string.Empty).ToArray());
                 await sw.WriteLineAsync(line);
             }
