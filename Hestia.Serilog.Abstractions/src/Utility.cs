@@ -29,7 +29,7 @@ namespace Hestia.Serilog
             public const string PropertyPrefix = "Property.";
         }
 
-        internal static ReadOnlyDictionary<string, Func<LogEvent, string>> LogEventPicker = new (new Dictionary<string, Func<LogEvent, string>> {
+        internal static readonly ReadOnlyDictionary<string, Func<LogEvent, string>> LogEventPicker = new (new Dictionary<string, Func<LogEvent, string>> {
             { PickerKeys.Timestamp,  @event => $"{@event.Timestamp:yyyy-MM-dd HH:mm:ss.fff}" },
             { PickerKeys.Level, @event => $"{@event.Level}" },
             { PickerKeys.TraceId, @event =>  @event.TraceId?.ToHexString() ?? string.Empty },
