@@ -7,17 +7,23 @@ using System.Threading.Tasks;
 
 namespace Hestia.Serilog.Fallback
 {
-    public sealed class ConsoleFallback(string name, TextWriter output, TextWriter error, Action<string> diagnotor) : IFallback 
+    public sealed class ConsoleFallback(string name, TextWriter output, TextWriter error, Func<string,DateTimeOffset,string> title, Action<string> diagnotor) : IFallback 
     {
         private readonly TextWriter Output = output ?? Console.Out;
         private readonly TextWriter Error = error ?? Console.Error;
-        private readonly Action<string> Diagnotor = diagnotor;
+        private readonly Func<string,DateTimeOffset,string> Title = title ?? IFallback.DefaultTitle;
+        private readonly Action<string> Diagnotor = diagnotor;        
 
-        public ConsoleFallback(string name):this (name,Console.Out, Console.Error, (message) => { Trace.WriteLine(message); }) { }
+        static ConsoleFallback()
+        {
+            Console.OutputEncoding = IFallback.DefaultEncoding;
+        }
+
+        public ConsoleFallback(string name):this (name,Console.Out, Console.Error, null, (message) => { Trace.WriteLine(message); }) { }
 
         private void TryDiagnose(string message)
         {
-            if( Diagnotor is null) { return; }
+            if ( Diagnotor is null) { return; }
             if (string.IsNullOrEmpty(message)) { return; }
             try
             {                
@@ -61,8 +67,8 @@ namespace Hestia.Serilog.Fallback
 
         private void WriteError(DateTimeOffset ts, IReadOnlyList<Exception> errors)
         {
-            if(errors is null || errors.Count == 0) { return; }
-            SafeWriteLine(Error ,$"[{name}] {ts:yyyy-MM-dd HH:mm:ss.fff}");
+            if(errors is null || errors.Count == 0) { return; }            
+            SafeWriteLine(Error , Title.Invoke(name, ts));
             foreach (var error in errors)
             {
                 WriteError(error);
@@ -72,26 +78,27 @@ namespace Hestia.Serilog.Fallback
         private void WriteLog(DateTimeOffset ts, IReadOnlyCollection<LogEvent> events)
         {
             if(events is null) { return; }
-            SafeWriteLine(Output, $"[{name}] {ts:yyyy-MM-dd HH:mm:ss.fff}");
+            SafeWriteLine(Output, Title.Invoke(name, ts));
             foreach (var @event in events)
             {
-                try
-                {
-                    var line = Utility.FormatEvent(@event);                    
-                    SafeWriteLine(Output,line);
-                }
-                catch (Exception ex)
-                {
-                    WriteError(ex);
-                }                
+                var line = Utility.FormatEvent(@event);
+                SafeWriteLine(Output, line);
             }
         }
 
         public Task ExecuteAsync(IReadOnlyList<Exception> errors, IReadOnlyCollection<LogEvent> events)
         {
-            var ts = DateTimeOffset.Now;
-            WriteError(ts, errors);
-            WriteLog(ts, events);
+            try
+            {
+                var ts = DateTimeOffset.Now;
+                WriteError(ts, errors);
+                WriteLog(ts, events);
+            }
+            catch (Exception ex)
+            {
+                WriteError(ex);
+            }
+            
             return Task.CompletedTask;
         }
     }

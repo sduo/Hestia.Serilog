@@ -1,6 +1,7 @@
 ﻿using Serilog.Events;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,18 +9,29 @@ using System.Threading.Tasks;
 
 namespace Hestia.Serilog.Fallback
 {
-    public sealed class LocalFileFallback(string name,  string error = "error", string[] columns = null, char separator = ',', char prefix = '"', char postfix='"',string rolling = "yyyyMMdd", Encoding encoding = null): IFallback
+    public sealed class LocalFileFallback(string name,  string error = "error", string[] columns = null, char separator = ',', char prefix = '"', char postfix='"', Func<string, DateTimeOffset, string> rolling = null , Func<string, DateTimeOffset, string> title = null, Encoding encoding = null): IFallback
     {
-        private readonly Encoding encoding = encoding ?? Encoding.UTF8;
-        private readonly string[] columns = columns ?? Utility.LogEventPicker.Keys.ToArray();
-        private readonly Func<string,DateTimeOffset,string> fmt = (name,ts) => string.IsNullOrEmpty(rolling) ? name : string.Join('.', name, ts.ToString(rolling));
+        public static readonly Func<string, DateTimeOffset, string> DefaultRolling = (name, ts) => $"[{name}]_{ts:yyyyMMdd}";
+        private readonly Encoding Encoding = encoding ?? IFallback.DefaultEncoding;
+        private readonly Func<string, DateTimeOffset, string> Title = title ?? IFallback.DefaultTitle;
+        private readonly Func<string, DateTimeOffset, string> Rolling = rolling ?? DefaultRolling;
+#if NET8_0_OR_GREATER
+        private readonly IReadOnlyCollection<string> Columns = columns?.AsReadOnly() ?? Utility.LogEventPicker.Keys as IReadOnlyCollection<string>;
+#else
+        private readonly IReadOnlyCollection<string> Columns = columns is null ? Utility.LogEventPicker.Keys : new ReadOnlyCollection<string>(columns);
+#endif
+        
 
         private async Task ErrorAsync(DateTimeOffset ts, IReadOnlyList<Exception> errors)
         {
-            var file = $"{fmt.Invoke(error,ts)}.log" ;
+            var file = $"{Rolling.Invoke(error,ts)}.log" ;
             using var fs = File.Open(file, FileMode.OpenOrCreate, FileAccess.Write);
-            using var sw = new StreamWriter(fs, encoding);
-            await sw.WriteLineAsync($"{name} - {ts:yyyy-MM-dd HH:mm:ss.fff}");
+            using var sw = new StreamWriter(fs, Encoding);
+            var title = Title.Invoke(error, ts);
+            if (!string.IsNullOrEmpty(title))
+            {
+                await sw.WriteLineAsync(title);
+            }
             foreach (var error in errors) {
                 await sw.WriteLineAsync(error.Message);
                 await sw.WriteLineAsync(error.GetBaseException().Message);
@@ -27,9 +39,9 @@ namespace Hestia.Serilog.Fallback
             }            
         }
 
-        private string FormatLine(string[] fields)
+        private string FormatLine(IReadOnlyCollection<string> fields)
         {
-            if(fields is null || fields.Length == 0) { return string.Empty; }
+            if(fields is null || fields.Count == 0) { return string.Empty; }
             return string.Join(separator, fields.Select(x => string.Concat(prefix, x, postfix)));
         }
 
@@ -37,15 +49,15 @@ namespace Hestia.Serilog.Fallback
 
         private async Task LogAsync(DateTimeOffset ts, IReadOnlyCollection<LogEvent> events)
         {
-            var file = $"{fmt.Invoke(name,ts)}.csv";
-            var title = File.Exists(file) ? FormatLine(columns) : null;
+            var file = $"{Rolling.Invoke(name,ts)}.csv";
+            var title = File.Exists(file) ? FormatLine(Columns) : null;
             using var fs = File.Open(file, FileMode.OpenOrCreate, FileAccess.Write);
-            using var sw = new StreamWriter(fs, encoding);
+            using var sw = new StreamWriter(fs, Encoding);
             if (!string.IsNullOrEmpty(title)) { await sw.WriteLineAsync(title); }
             foreach (var @event in events)
             {
-                var dynamics = Utility.BuildLogEventDictionary(@event);
-                var line = FormatLine(columns.Select(x => dynamics.ContainsKey(x) ? dynamics[x] : string.Empty).ToArray());
+                var dynamics = Utility.BuildLogEventDictionary(@event, Columns.ToDictionary(x => x, x => x));
+                var line = FormatLine(dynamics.Values);
                 await sw.WriteLineAsync(line);
             }
         }

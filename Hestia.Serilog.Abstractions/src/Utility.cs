@@ -14,7 +14,7 @@ namespace Hestia.Serilog
 { 
     public static class Utility
     {
-        public static class PickerKeys
+        public static class LogEventKey
         {
             public const string Timestamp = "Timestamp";
             public const string Level = "Level";
@@ -30,16 +30,16 @@ namespace Hestia.Serilog
         }
 
         internal static readonly ReadOnlyDictionary<string, Func<LogEvent, string>> LogEventPicker = new (new Dictionary<string, Func<LogEvent, string>> {
-            { PickerKeys.Timestamp,  @event => $"{@event.Timestamp:yyyy-MM-dd HH:mm:ss.fff}" },
-            { PickerKeys.Level, @event => $"{@event.Level}" },
-            { PickerKeys.TraceId, @event =>  @event.TraceId?.ToHexString() ?? string.Empty },
-            { PickerKeys.SpanId, @event => @event.SpanId?.ToHexString() ?? string.Empty },
-            { PickerKeys.Message, @event => @event.RenderMessage() ?? string.Empty },
-            { PickerKeys.Template, @event => @event.MessageTemplate.Text },
-            { PickerKeys.Properties, @event => Utility.FormatProperties(@event.Properties) },
-            { PickerKeys.Exception, @event => @event.Exception?.Message ?? string.Empty },
-            { PickerKeys.ExceptionBase, @event => @event.Exception?.GetBaseException().Message ?? string.Empty },
-            { PickerKeys.ExceptionStackTrace, @event => @event.Exception?.StackTrace ?? string.Empty }
+            { LogEventKey.Timestamp,  @event => $"{@event.Timestamp:yyyy-MM-dd HH:mm:ss.fff}" },
+            { LogEventKey.Level, @event => $"{@event.Level}" },
+            { LogEventKey.TraceId, @event =>  @event.TraceId?.ToHexString() ?? string.Empty },
+            { LogEventKey.SpanId, @event => @event.SpanId?.ToHexString() ?? string.Empty },
+            { LogEventKey.Message, @event => @event.RenderMessage() ?? string.Empty },
+            { LogEventKey.Template, @event => @event.MessageTemplate.Text },
+            { LogEventKey.Properties, @event => Utility.FormatProperties(@event.Properties) },
+            { LogEventKey.Exception, @event => @event.Exception?.Message ?? string.Empty },
+            { LogEventKey.ExceptionBase, @event => @event.Exception?.GetBaseException().Message ?? string.Empty },
+            { LogEventKey.ExceptionStackTrace, @event => @event.Exception?.StackTrace ?? string.Empty }
         });
 
         public static string FormatProperty(LogEventPropertyValue property)
