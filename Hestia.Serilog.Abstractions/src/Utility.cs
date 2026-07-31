@@ -1,19 +1,17 @@
-﻿using Microsoft.VisualBasic;
-using Serilog;
-using Serilog.Events;
+﻿using Serilog.Events;
 using Serilog.Formatting.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Security.Principal;
-using static Hestia.Serilog.Utility;
 
 namespace Hestia.Serilog
 { 
     public static class Utility
     {
+        public const string PropertyPrefix = "Property.";
+
         public static class LogEventKey
         {
             public const string Timestamp = "Timestamp";
@@ -26,7 +24,6 @@ namespace Hestia.Serilog
             public const string Exception = "Exception";
             public const string ExceptionBase = "ExceptionBase";
             public const string ExceptionStackTrace = "ExceptionStackTrace";
-            public const string PropertyPrefix = "Property.";
         }
 
         internal static readonly ReadOnlyDictionary<string, Func<LogEvent, string>> LogEventPicker = new (new Dictionary<string, Func<LogEvent, string>> {
@@ -36,7 +33,7 @@ namespace Hestia.Serilog
             { LogEventKey.SpanId, @event => @event.SpanId?.ToHexString() ?? string.Empty },
             { LogEventKey.Message, @event => @event.RenderMessage() ?? string.Empty },
             { LogEventKey.Template, @event => @event.MessageTemplate.Text },
-            { LogEventKey.Properties, @event => Utility.FormatProperties(@event.Properties) },
+            { LogEventKey.Properties, @event => FormatProperties(@event.Properties) },
             { LogEventKey.Exception, @event => @event.Exception?.Message ?? string.Empty },
             { LogEventKey.ExceptionBase, @event => @event.Exception?.GetBaseException().Message ?? string.Empty },
             { LogEventKey.ExceptionStackTrace, @event => @event.Exception?.StackTrace ?? string.Empty }
@@ -79,7 +76,16 @@ namespace Hestia.Serilog
             var mapped = new Dictionary<string,string>();
             foreach(var kv in map)
             {
-                if (LogEventPicker.TryGetValue(kv.Key, out var func))
+                if(kv.Key.StartsWith(PropertyPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    var key = kv.Key[PropertyPrefix.Length..];
+                    if (string.IsNullOrEmpty(key)) { continue; }
+                    if(@event.Properties.TryGetValue(key, out var property))
+                    {
+                        mapped.TryAdd(kv.Value, FormatProperty(property));
+                    }
+                }
+                else if (LogEventPicker.TryGetValue(kv.Key, out var func))
                 {
                     mapped.TryAdd(kv.Value, func.Invoke(@event));
                 }
