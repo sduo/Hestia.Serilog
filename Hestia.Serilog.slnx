@@ -1,3 +1,6 @@
 <Solution>
   <Project Path="Hestia.Serilog.Abstractions/src/Hestia.Serilog.Abstractions.csproj" />
+  <Project Path="Hestia.Serilog.Abstractions/tests/Hestia.Serilog.Abstractions.Tests.csproj" />
+  <Project Path="Hestia.Serilog.Sinks.AliCloud.SLS/src/Hestia.Serilog.Sinks.AliCloud.SLS.csproj" />
+  <Project Path="Hestia.Serilog.Sinks.AliCloud.SLS/tests/Hestia.Serilog.Sinks.AliCloud.SLS.Tests.csproj" />
 </Solution>

@@ -1,4 +1,4 @@
-name: Hestia.Serilog.Abstractions
+name: Hestia.Serilog.Sinks.AliCloud.SLS
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
 jobs:
   Publish:
     env:
-      PROJECT: Hestia.Serilog.Abstractions
+      PROJECT: Hestia.Serilog.Sinks.AliCloud.SLS
       NUGET: https://api.nuget.org/v3/index.json
     environment: release
     permissions:
