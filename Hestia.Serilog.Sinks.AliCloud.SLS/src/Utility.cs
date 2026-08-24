@@ -2,6 +2,7 @@
 using Serilog.Events;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -21,13 +22,10 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
             public const string BodyRawSize = "x-log-bodyrawsize";
             public const string ApiVersion = "x-log-apiversion";
             public const string CompressType = "x-log-compresstype";
-
             public const string SignatureMethod = "x-log-signaturemethod";
-
             public const string ContentMD5 = "Content-MD5";
             public static readonly MediaTypeHeaderValue MimeProtobuf = new ("application/x-protobuf");
-        }
-
+        }        
         internal static class Fields
         {
             public const string Timestamp = "timestamp";
@@ -39,17 +37,16 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
             public const string Properties = "properties";
             public const string Exception = "exception";
         }       
-
         public const string SDK = "hestia.serilog.sls" /* "log-dotnetcore-sdk" */;
         public static readonly string Version  = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         public const string ApiVersion = "0.6.0";
-
         public const string Compress = "lz4";
-
         public const string Signature = "hmac-sha1";
-
-        public static readonly Dictionary<char, string> EncodeMap = new() { { '+', "%20" }, { '*', "%2A" }, { '~', "%7E" }, { '/', "%2F" } };
-
+#if NET8_0_OR_GREATER
+        public static readonly IReadOnlyDictionary<char, string> EncodeMap = new Dictionary<char, string>() { { '+', "%20" }, { '*', "%2A" }, { '~', "%7E" }, { '/', "%2F" } }.AsReadOnly();
+#else
+        public static readonly IReadOnlyDictionary<char, string> EncodeMap = new ReadOnlyDictionary<char, string>(new Dictionary<char, string>() { { '+', "%20" }, { '*', "%2A" }, { '~', "%7E" }, { '/', "%2F" } });
+#endif
         public static string Md5(byte[] content) => (content?.Length > 0) ? Convert.ToHexString(HASH.MD5(content)) : string.Empty;
 
         public static string HMAC_SHA1(byte[] key, byte[] content) => (key?.Length > 0 && content?.Length > 0) ? Convert.ToBase64String(MAC.HMAC_SHA1(key, content)) : string.Empty;

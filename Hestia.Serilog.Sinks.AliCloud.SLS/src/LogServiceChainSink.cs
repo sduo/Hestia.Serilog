@@ -19,19 +19,17 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
 {
     //https://github.com/aliyun/aliyun-log-dotnetcore-sdk/blob/master/Aliyun.Api.LogService/Infrastructure/Protocol/Http/HttpRequestMessageBuilder.cs#L51
 
-    public class LogServiceChainSink(string name, IServiceProvider services) : ChainSink
+    public sealed class LogServiceChainSink(string name, IServiceProvider services, ChainSink next=null) : ChainSink(next)
     {
+        public LogServiceChainSink(string name, IServiceProvider services):this (name, services, new LocalFileChainSink()) { }
+        public LogServiceChainSink(IServiceProvider services) : this(null, services) { }
         private readonly IHttpClientFactory Http = services.GetService<IHttpClientFactory>();
-        private readonly IConfigurationSection Configuration = services.GetService<IConfiguration>().GetSection($"SLS:{name}");
-
-
-        public Func<IReadOnlyDictionary<string, string>> TagFactory { get; init; } = null;
-
-        public Func<string> ShardFactory { get; init; } = null;
-
-        public Func<LogEvent, IReadOnlyDictionary<string,string>> ContentFactory { get; init; } = (@event)=> {
+        private readonly IConfigurationSection Configuration = services.GetService<IConfiguration>().GetSection(string.IsNullOrEmpty(name) ? "SLS" : $"SLS:{name}");        
+        public Func<IConfigurationSection,IReadOnlyDictionary<string, string>> TagFactory { get; init; } = null;
+        public Func<IConfigurationSection,string> ShardFactory { get; init; } = null;
+        public Func<IConfigurationSection, LogEvent, IReadOnlyDictionary<string,string>> ContentFactory { get; init; } = (configuration, @event)=> {            
             var content = new Dictionary<string, string>() {
-                { Fields.Timestamp, @event.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff zzz", CultureInfo.InvariantCulture) },
+                { Fields.Timestamp, @event.Timestamp.ToString(configuration.GetValue($"format:{Fields.Timestamp}","yyyy-MM-dd HH:mm:ss.fff zzz"), CultureInfo.InvariantCulture) },
                 { Fields.Level, @event.Level.ToString() },
                 { Fields.Template, @event.MessageTemplate.Text },
                 { Fields.Message, @event.RenderMessage() },
@@ -46,8 +44,6 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
             return new ReadOnlyDictionary<string,string>(content);
 #endif
         };
-
-
         private static StringBuilder GenerateSignSource(HttpRequestMessage request)
         {
             var list = new List<string>()
@@ -73,8 +69,6 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
             
             return source;
         }
-
-
         private static bool Filter(LogEvent log, string endpoint)
         {            
             if(log is null) { return false; }
@@ -84,7 +78,6 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
             }
             return true;
         }
-
         protected override void Write(IReadOnlyCollection<LogEvent> events)
         {
             var ak = Configuration.GetValue<string>("ak", null);
@@ -104,7 +97,7 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
             var topic = Configuration.GetValue("topic", string.Empty);
             var source = Configuration.GetValue("source", string.Empty);
 
-            var shard = ShardFactory?.Invoke() ?? null;
+            var shard = ShardFactory?.Invoke(Configuration) ?? null;
             var path = new StringBuilder($"/logstores/{store}/shards");
             var query = new Dictionary<string, string>();
             if (string.IsNullOrEmpty(shard))
@@ -134,7 +127,7 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
                 Topic = topic, // Empty is allowed, but not null.
                 Source = source, // Empty is allowed, but not null.
                 LogTags = {
-                    TagFactory?.Invoke()?.Select(x=> new LogTag()
+                    TagFactory?.Invoke(Configuration)?.Select(x=> new LogTag()
                     {
                         Key = x.Key,
                         Value = x.Value ?? string.Empty // Empty is allowed, but not null.
@@ -144,7 +137,7 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
                     logs.Select(x => new Log {
                         Time = (uint)x.Timestamp.ToUnixTimeSeconds(),
                         Contents = {
-                            ContentFactory?.Invoke(x).Where(x=>!string.IsNullOrEmpty(x.Key)).ToDictionary(x=>x.Key, x=>x.Value).Select(kv=> new Log.Types.Content{
+                            ContentFactory?.Invoke(Configuration, x).Where(x=>!string.IsNullOrEmpty(x.Key)).ToDictionary(x=>x.Key, x=>x.Value).Select(kv=> new Log.Types.Content{
                                 Key = kv.Key, Value = kv.Value ?? string.Empty
                             })
                         }
