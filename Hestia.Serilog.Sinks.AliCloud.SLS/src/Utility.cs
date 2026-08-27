@@ -17,7 +17,7 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
     public sealed class Utility
     {
         // https://github.com/aliyun/aliyun-log-dotnetcore-sdk/blob/master/Aliyun.Api.LogService/Infrastructure/Protocol/Http/LogHeaders.cs
-        public sealed class Headers
+        public static class Headers
         {
             public const string BodyRawSize = "x-log-bodyrawsize";
             public const string ApiVersion = "x-log-apiversion";
@@ -25,8 +25,18 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
             public const string SignatureMethod = "x-log-signaturemethod";
             public const string ContentMD5 = "Content-MD5";
             public static readonly MediaTypeHeaderValue MimeProtobuf = new ("application/x-protobuf");
-        }        
-        internal static class Fields
+        }
+        public static class Properties
+        {
+            public const string SourceContext = "SourceContext";
+            public const string Uri = "Uri";
+            public const string RequestUri = "RequestUri";
+        }
+        public static class TagKeys
+        {
+            public const string SourceContext = "SourceContext";
+        }
+        public static class ContentKeys
         {
             public const string Timestamp = "timestamp";
             public const string Level = "level";
