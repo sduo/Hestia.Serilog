@@ -6,7 +6,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
 	  <PackageId>Hestia.Serilog.Sinks.AliCloud.SLS</PackageId>
-	  <Version>1.0.3</Version>
+	  <Version>1.0.4</Version>
 	  <Authors>SDuo</Authors>
 	  <PackageDescription></PackageDescription>
 	  <RepositoryUrl>https://github.com/sduo/Hestia.Serilog</RepositoryUrl>

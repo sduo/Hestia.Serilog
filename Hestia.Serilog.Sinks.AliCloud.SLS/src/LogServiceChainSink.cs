@@ -31,7 +31,7 @@ namespace Hestia.Serilog.Sinks.AliCloud.SLS
         private readonly IHttpClientFactory Http = services.GetService<IHttpClientFactory>();
         private readonly IConfigurationSection Configuration = services.GetService<IConfiguration>().GetSection(string.IsNullOrEmpty(name) ? "SLS" : $"SLS:{name}");
 
-        private IReadOnlyDictionary<string, string> FixedTags { get; init; } = null;
+        public IReadOnlyDictionary<string, string> FixedTags { get; init; } = null;
 
         public Func<IConfigurationSection, LogEvent, Log> LogBuilder { get; init; } = (configuration, @event) => {
             var tags = new Dictionary<string, string>();
